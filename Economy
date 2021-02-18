@@ -8,13 +8,27 @@ import asyncio
 
 
 
+
+
+
+
+
+
+
+
+
+Bank = 'bank.json' #put the name of the .json file you want to use as your bank in the quotes
+
+
+
+
 class Economy(commands.Cog): #make sure the name of your file is the same as the class and add_cog() command at the bottom
     
     def __init__(self, bot):
         self.bot = bot
     
+   
     
-
     @commands.command()
     async def shop(self, ctx):
         '''---- Shows a list of all items in the shop'''
@@ -217,7 +231,7 @@ class Economy(commands.Cog): #make sure the name of your file is the same as the
 
         users[str(user.id)]["wallet"] += earnings
 
-        with open("mainbank.json", "w") as f:
+        with open(Bank, "w") as f:
             json.dump(users, f)
 
     @commands.command()
@@ -309,7 +323,7 @@ async def open_account(user):
 
     users = await get_bank_data()
     
-    with open("mainbank.json", "r") as f:
+    with open(Bank, "r") as f:
         users = json.load(f)
     
     if str(user.id) in users:
@@ -320,12 +334,12 @@ async def open_account(user):
         users[str(user.id)]["wallet"] = 0 
         users[str(user.id)]["bank"] = 0 
 
-    with open("mainbank.json", "w") as f:
+    with open(Bank, "w") as f:
         json.dump(users, f)
     return True
 
 async def get_bank_data():
-    with open("mainbank.json", "r") as f:
+    with open(Bank, "r") as f:
         users = json.load(f)
 
     return users 
@@ -335,7 +349,7 @@ async def update_bank(user, change = 0, mode = "wallet"):
 
     users[str(user.id)][mode] += change
 
-    with open("mainbank.json", "w") as f:
+    with open(Bank, "w") as f:
         json.dump(users, f)    
     
     bal = [users[str(user.id)]["wallet"], users[str(user.id)]["bank"]]
@@ -346,7 +360,7 @@ async def update_name(user, name):         #this is purely to make leaderboard w
 
     users[str(user.id)]['name'] = name
 
-    with open("mainbank.json", "w") as f:
+    with open(Bank, "w") as f:
         json.dump(users, f)
 
     use = users[str(user.id)]['name']
@@ -395,7 +409,7 @@ async def buy_this(user,item_name,amount):
         obj = {"item":item_name , "amount" : amount}
         users[str(user.id)]["inventory"] = [obj]
 
-    with open("mainbank.json", "w") as f:
+    with open(Bank, "w") as f:
         json.dump(users, f)
 
     await update_bank(user,cost*-1,"wallet")   
@@ -442,7 +456,7 @@ async def sell_this(user,item_name,amount,price = None):
     except:
         return [False,3]    
 
-    with open("mainbank.json","w") as f:
+    with open(Bank,"w") as f:
         json.dump(users,f)
 
     await update_bank(user,cost,"wallet")
@@ -454,11 +468,4 @@ mainshop = [{"name":"Watch","price":100,"description":"Time"}, #to add more item
             {"name":"Laptop","price":1000,"description":"Work"}, 
             {"name":"PC","price":10000,"description":"Gaming"}] 
 
-casinoscript = '''__**Jackpot**__ anything you bet and lose goes to the pot'''
-casinolist = ['jackpot']
-
-fightscript = '''Punch, Block, Mystery, or cancel'''
-fightlist = ['Block', 'Punch', 'Mystery', 'cancel']                
-
-mysteryphrases = ['Put your funny phrases here']
-mysteryvalue = [0, 0, 5, 30, 9, 3, 4, 10, 0, 0, 2, 1, 6, 7, 8, 0, 0]     
+  
