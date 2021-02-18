@@ -1,6 +1,5 @@
-# Discord-Bot-Startup-Kit-py
-All the starting code you need for a python discord bot
+# Discord-Bot-README
+Cogs for Discord bots
 
-#Base-Code-READMe
-For starters make sure when adding your code you add your token so you can run the bot not to mention set your prefix and status 
-this is the starting peice for your bot 
+be sure you have the prerequisites
+such as having the json add-ons installed along with asyncio
