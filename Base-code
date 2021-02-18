@@ -1,0 +1,33 @@
+import discord
+from discord.ext import commands, tasks
+import os
+from random import choice
+import random
+import json
+import asyncio
+
+
+bot = commands.Bot(command_prefix='prefix')
+
+
+
+@bot.event
+async def on_ready():
+    await bot.change_presence(status=discord.Status.online, activity=discord.Game('status'))
+    
+    await channel.send("Hi, I'm ready for use now")
+    print("bot is ready")
+
+@bot.command()
+async def hello(ctx):
+    '''says hello back'''
+    await ctx.send("hey Wussup")
+
+
+@bot.command()
+async def ping(ctx):
+    '''fetches the latency of the bot
+    be nice if its having a bad day he may be slow'''
+    await ctx.send(f"Pong! I'll sing a song {round(Bot.latency * 1000)}ms")
+    
+bot.run('TOKEN')    
