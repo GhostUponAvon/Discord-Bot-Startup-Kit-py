@@ -1,0 +1,464 @@
+import discord
+from discord.ext import commands, tasks
+import os
+from random import choice
+import random
+import json
+import asyncio
+
+
+
+class Economy(commands.Cog): #make sure the name of your file is the same as the class and add_cog() command at the bottom
+    
+    def __init__(self, bot):
+        self.bot = bot
+    
+    
+
+    @commands.command()
+    async def shop(self, ctx):
+        '''---- Shows a list of all items in the shop'''
+        em = discord.Embed(title = 'Shop :moneybag:', color = discord.Color.green())
+
+        for item in mainshop:
+            name = item["name"]
+            price = item["price"]
+            desc = item["description"]
+            em.add_field(name = name, value = f"${price} | {desc}", inline=False)
+
+        await ctx.send(embed = em)
+
+    @commands.command()
+    async def buy(self, ctx,item,amount = 1):
+        '''---- Use this command to buy items from the shop 
+        command usage -> buy <item> <amount>'''
+        await open_account(ctx.author)
+
+        res = await buy_this(ctx.author,item,amount)
+
+        if not res[0]:
+            if res[1]==1:
+                await ctx.send("That Object isn't there :pensive:")
+                return
+            if res[1]==2:
+                await ctx.send(f"You don't have enough money for {amount} {item} :sob:")
+                return
+        await ctx.send(f'You just brought {amount} {item}')
+
+    @commands.command(aliases=['inv'])
+    async def inventory(self, ctx):
+        '''---- shows a list of all the items in your inventory'''
+        await open_account(ctx.author)
+        user = ctx.author
+        users = await get_bank_data()
+
+        try:
+            inventory = users[str(user.id)]["inventory"]
+        except:
+            inventory = []
+        
+        
+        em = discord.Embed(title = "Inventory", color = discord.Color.red())
+        for item in inventory:
+            name = item["item"]
+            amount = item["amount"]
+
+            em.add_field(name = name, value = amount, inline=False)
+
+        await ctx.send(embed = em)            
+
+        
+
+    @commands.command()
+    async def sell(self, ctx,item,amount = 1):
+        '''---- Allows you to sell an item (Warning: for less than you bought it for) '''
+        await open_account(ctx.author)
+
+        res = await sell_this(ctx.author,item,amount)
+
+        if not res[0]:
+            if res[1]==1:
+                await ctx.send("That Object isn't there!")
+                return
+            if res[1]==2:
+                await ctx.send(f"You don't have {amount} {item} in your Inventory.")
+                return
+            if res[1]==3:
+                await ctx.send(f"You don't have {item} in your Inventory.")
+                return
+
+        await ctx.send(f"You just sold {amount} {item}.")
+
+
+    
+
+    @commands.command(aliases = ["lb"])
+    async def leaderboard(self, ctx,x = 10):
+        '''---- Shows a list of the richest users'''
+        users = await get_bank_data()
+        leader_board = {}
+        total = []
+        for user in users:
+            name = int(user)
+            total_amount = users[user]["wallet"] + users[user]["bank"]
+            leader_board[total_amount] = name
+            total.append(total_amount)
+
+        total = sorted(total,reverse=True)   
+
+        em = discord.Embed(title = f"Top {x} Richest People" , description = "*This is decided on the basis of raw money in the bank and wallet*",color = discord.Color(0xfa43ee))
+        index = 1
+        for amt in total:
+            if index > 3 :
+                emojisss = ':small_blue_diamond:'
+            elif index == 2 :
+                emojisss = ':second_place:'
+            elif index == 3 :
+                emojisss = ':third_place:'        
+            else:
+                emojisss = ':first_place:'    
+            id_ = leader_board[amt]
+            member = users[str(id_)]['name']
+            em.add_field(name = f"{emojisss} {index}. {member}" , value = f"{amt}",  inline = False)
+            if index == x:
+                break
+            else:
+                index += 1
+
+        await ctx.send(embed = em)   
+
+    @commands.command(aliases=['with'])
+    async def withdraw(self, ctx, amount = None):
+        '''---\- Lets you withdraw money from your bank and into your wallet 
+        -> withdraw <amount>'''
+        await open_account(ctx.author)
+        if amount == None:
+            await ctx.send('Stop messing with me and enter the amount')
+            return
+        
+        bal = await update_bank(ctx.author)
+
+        if amount == 'all':
+            amount = bal[1]
+
+        amount = int(amount)
+        if amount > bal[1]:
+            await ctx.send('You trying to **hack** me for cash enter an amount you have')
+            return
+        if amount < 0 :
+            await ctx.send("Dude that doesn't even make **sense** enter an actual amount")    
+            return
+
+        await update_bank(ctx.author, amount)
+        await update_bank(ctx.author, -1 * amount, "bank")    
+
+        em = discord.Embed(title = f"You Withdrew __{amount}__ coins!", color = discord.Color.green())
+
+        await ctx.send(embed = em)
+
+    @commands.command(aliases=['dep'])
+    async def deposit(self, ctx, amount = None):
+        '''---- Deposit money from your wallet to your bank ->
+        deposit <amount>'''
+        await open_account(ctx.author)
+        if amount == None:
+            await ctx.send('Stop messing with me and enter the amount')
+            return
+        
+        bal = await update_bank(ctx.author)
+        
+        if amount == 'all':
+            amount = bal[0]
+        
+        amount = int(amount)
+        if amount > bal[0]:
+            await ctx.send('You trying to **hack** me for cash enter an amount you have')
+            return
+        if amount < 0 :
+            await ctx.send("Dude that doesn't even make **sense** enter an actual amount")    
+            return
+
+        await update_bank(ctx.author, -1 * amount)
+        await update_bank(ctx.author,amount, "bank")    
+
+        em = discord.Embed(title = f"You Deposited __{amount}__ coins!", color = discord.Color.green())
+
+        await ctx.send(embed = em)
+
+    @commands.command(aliases=['bal'])
+    async def balance(self, ctx):
+        '''---- Shows you how much money you have'''
+        await open_account(ctx.author)
+        user = ctx.author
+        users = await get_bank_data()
+        await update_name(ctx.author, ctx.author.name)
+
+        wallet_amt = users[str(user.id)]["wallet"]
+        bank_amt = users[str(user.id)]["bank"]
+
+        em = discord.Embed(title = f"{ctx.author.name}'s balance", color = discord.Color.red())
+        em.add_field(name = "Wallet", value = wallet_amt)
+        em.add_field(name = "Bank balance", value = bank_amt)
+        await ctx.send(embed = em)
+
+    @commands.command()
+    async def beg(self, ctx):
+        '''---- gives you a little money in your wallet'''
+        await open_account(ctx.author)
+
+        users = await get_bank_data()
+
+        user = ctx.author
+
+        earnings = random.randrange(101)
+
+        await ctx.send(f"Someone gave you {earnings} coins!!")
+
+
+        users[str(user.id)]["wallet"] += earnings
+
+        with open("mainbank.json", "w") as f:
+            json.dump(users, f)
+
+    @commands.command()
+    async def give(self, ctx, member : discord.Member, amount = None):
+        '''---- gives somebody some coins'''
+        await open_account(ctx.author)
+        await open_account(member)
+        if amount == None:
+            await ctx.send('Stop messing with me and enter the amount')
+            return
+        
+        bal = await update_bank(ctx.author)
+        if amount == "all":
+            amount = bal[0]
+
+        amount = int(amount)
+        if amount > bal[1]:
+            await ctx.send('You trying to **hack** me for cash enter an amount you have')
+            return
+        if amount < 0 :
+            await ctx.send("Dude that doesn't even make **sense** enter an actual amount")    
+            return
+
+        await update_bank(ctx.author, -1 * amount, "bank")
+        await update_bank(member,amount, "bank")    
+
+        await ctx.send(f"You gave {amount} coins")
+
+    @commands.command()
+    async def rob(self, ctx, member : discord.Member):
+        '''---- Steals coins from another users wallet based upon what they have'''
+        await open_account(ctx.author)
+        await open_account(member)
+        
+        bal = await update_bank(member)
+
+        if bal[0]<100:
+            await ctx.send("He doesn't have that kind of cash dude leave him alone.")
+            return
+
+        earnings = random.randrange(0, bal[0])
+
+        await update_bank(ctx.author,earnings)
+        await update_bank(member,-1*earnings)    
+
+        await ctx.send(f"You Robbed {member} and got {earnings} coins")    
+
+    @commands.command()
+    async def slots(self, ctx, amount = None):
+        '''---- Bet money to have a chance to win more ->
+        slots <amount>'''
+        await open_account(ctx.author)
+        
+        if amount == None:
+            await ctx.send('Stop messing with me and enter the amount')
+            return
+        
+        bal = await update_bank(ctx.author)
+
+        amount = int(amount)
+        if amount > bal[0]:
+            await ctx.send('You trying to **hack** me for cash enter an amount you have')
+            return
+        if amount < 0 :
+            await ctx.send("Dude that doesn't even make **sense** enter an actual amount")    
+            return
+
+        final = []
+        for i in range(3):
+            a = random.choice(["X","O","Q"])
+
+            final.append(a)
+
+        await ctx.send(str(final))
+
+        if final[0] == final[1] or final[0] == final[2] or final[2] == final[1] :
+            await update_bank(ctx.author, 2 * amount)
+            await ctx.send('You won')
+        else:
+            await update_bank(ctx.author, -1*amount)    
+            await ctx.send('You lost ')   
+
+def setup(bot):
+    bot.add_cog(Economy(bot))   
+    print('Economy is loaded')
+
+
+async def open_account(user):
+
+    users = await get_bank_data()
+    
+    with open("mainbank.json", "r") as f:
+        users = json.load(f)
+    
+    if str(user.id) in users:
+        return False
+    
+    else:
+        users[str(user.id)] = {}
+        users[str(user.id)]["wallet"] = 0 
+        users[str(user.id)]["bank"] = 0 
+
+    with open("mainbank.json", "w") as f:
+        json.dump(users, f)
+    return True
+
+async def get_bank_data():
+    with open("mainbank.json", "r") as f:
+        users = json.load(f)
+
+    return users 
+
+async def update_bank(user, change = 0, mode = "wallet"):
+    users = await get_bank_data()
+
+    users[str(user.id)][mode] += change
+
+    with open("mainbank.json", "w") as f:
+        json.dump(users, f)    
+    
+    bal = [users[str(user.id)]["wallet"], users[str(user.id)]["bank"]]
+    return bal 
+
+async def update_name(user, name):         #this is purely to make leaderboard work because get_user() doesnt work
+    users = await get_bank_data()
+
+    users[str(user.id)]['name'] = name
+
+    with open("mainbank.json", "w") as f:
+        json.dump(users, f)
+
+    use = users[str(user.id)]['name']
+
+    return use
+#casino..............................................................................
+
+async def buy_this(user,item_name,amount):
+    item_name = item_name.lower()
+    name_ = None
+    for item in mainshop:
+        name = item["name"].lower()
+        if name == item_name:
+            name_ = name
+            price = item["price"]
+            break   
+    if name_ == None:
+        return [False,1]
+
+    cost = price*amount
+
+    users = await get_bank_data()
+
+    bal = await update_bank(user)
+
+    if bal[0]<cost:
+        return [False,2]
+
+
+    try:
+        index = 0
+        t = None
+        for thing in users[str(user.id)]["inventory"]:
+            n = thing["item"]
+            if n == item_name:
+                old_amt = thing["amount"]
+                new_amt = old_amt + amount
+                users[str(user.id)]["inventory"][index]["amount"] = new_amt
+                t = 1
+                break
+            index += 1
+        if t == None:
+            obj = {"item":item_name , "amount" : amount}   
+            users[str(user.id)]["inventory"].append(obj)
+    except:
+        obj = {"item":item_name , "amount" : amount}
+        users[str(user.id)]["inventory"] = [obj]
+
+    with open("mainbank.json", "w") as f:
+        json.dump(users, f)
+
+    await update_bank(user,cost*-1,"wallet")   
+
+    return [True,"Worked"]
+
+async def sell_this(user,item_name,amount,price = None):
+    item_name = item_name.lower()
+    name_ = None
+    for item in mainshop:
+        name = item["name"].lower()
+        if name == item_name:
+            name_ = name
+            if price==None:
+                price = 0.5* item["price"]
+            break
+
+    if name_ == None:
+        return [False,1]
+
+    cost = price*amount
+
+    users = await get_bank_data()
+
+    bal = await update_bank(user)
+
+
+    try:
+        index = 0
+        t = None
+        for thing in users[str(user.id)]["inventory"]:
+            n = thing["item"]
+            if n == item_name:
+                old_amt = thing["amount"]
+                new_amt = old_amt - amount
+                if new_amt < 0:
+                    return [False,2]
+                users[str(user.id)]["inventory"][index]["amount"] = new_amt
+                t = 1
+                break
+            index+=1 
+        if t == None:
+            return [False,3]
+    except:
+        return [False,3]    
+
+    with open("mainbank.json","w") as f:
+        json.dump(users,f)
+
+    await update_bank(user,cost,"wallet")
+
+    return [True,"Worked"]
+
+#lists................................................................
+mainshop = [{"name":"Watch","price":100,"description":"Time"}, #to add more items simply use the same syntax and append the item as shown with the other items
+            {"name":"Laptop","price":1000,"description":"Work"}, 
+            {"name":"PC","price":10000,"description":"Gaming"}] 
+
+casinoscript = '''__**Jackpot**__ anything you bet and lose goes to the pot'''
+casinolist = ['jackpot']
+
+fightscript = '''Punch, Block, Mystery, or cancel'''
+fightlist = ['Block', 'Punch', 'Mystery', 'cancel']                
+
+mysteryphrases = ['Put your funny phrases here']
+mysteryvalue = [0, 0, 5, 30, 9, 3, 4, 10, 0, 0, 2, 1, 6, 7, 8, 0, 0]     
