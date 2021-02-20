@@ -32,7 +32,7 @@ class Moderation(commands.Cog):
         await member.kick(reason=reason)
 
     @commands.command()
-    @commands.has_role("Moderator")
+    @commands.has_role("Moderator") 
     async def ban(self, ctx, member : discord.Member, *, reason=None):
         '''bans member -> command use : ban <member>'''
         await member.ban(reason=reason)
