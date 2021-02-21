@@ -10,3 +10,6 @@ Cogs for Discord bots
 
 # Moderation-Cog
 make sure to set the roles you want to be aloud to use the specific features for example @commands.has_role('mod') will let anyone with the 'mod' role the ability to use it
+
+# Fun-Cog
+this ones just for fun, enjoy :)
