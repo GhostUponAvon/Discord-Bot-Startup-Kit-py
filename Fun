@@ -1,0 +1,107 @@
+import discord
+from discord.ext import commands
+import os
+import random
+
+class Fun(commands.Cog):
+
+    def __init__(self, bot):
+        self.bot = bot
+
+    
+    @commands.command(aliases=['8ball'])
+    async def _8ball(self, ctx, *, question):
+        '''plays a fun answer game command use is : 8ball <question>'''
+        responses = ["It is certain.",
+                    "It is decidedly so.",
+                    "Without a doubt.",
+                    "Yes - definitely.",
+                    "You may rely on it.",
+                    "As I see it, yes.",
+                    "Most likely.",
+                    "Outlook good.",
+                    "Yes.",
+                    "Signs point to yes.",
+                    "Reply hazy, try again.",
+                    "Ask again later.",
+                    "Better not tell you now.",
+                    "Cannot predict now.",
+                    "Concentrate and ask again.",
+                    "Don't count on it.",
+                    "My reply is no.",
+                    "My sources say no.",
+                    "Outlook not so good.",
+                    "Very doubtful."]
+        await ctx.send(f'Question: {question}\nAnswer: {random.choice(responses)}')     
+
+
+
+        await ctx.send(f'Question: {question}\nBoomer: {random.choice(responses)}')     
+    @commands.command(aliases=['seb'])
+    async def SebMoment(self, ctx, *, words = 'None'):
+        
+        rating = random.randrange(101)
+        ratings = random.randrange(101)
+
+        emb = discord.Embed(title = f"__Seb Moment__", description = '*When you need a seb moment*', color = discord.Color.red())
+        emb.set_footer(text='Powered by Lupa')
+        emb.add_field(name = "Seb rating :sunglasses:", value = f'{rating}/100')
+        emb.add_field(name = "Lupa rating :dog:", value = f'{ratings}/100', inline=False)
+        emb.add_field(name = "Theme:", value = f'{words}', inline=True)
+        
+        emb.set_image(url = 'https://media.tenor.com/images/e119950150ebf396bc289e4cf957e7df/tenor.gif', )
+        
+        await ctx.send(embed = emb)    
+        
+    @commands.command(aliases=['racc'])
+    async def Racc(self, ctx, *, words = 'None'):
+        gifs = ['https://media.tenor.com/images/2b1036e4b4b2c101efd2e663f3fb34b3/tenor.gif', 
+                'https://media.tenor.com/images/7c8d63da17287a3594d7279537f30133/tenor.gif', 
+                'https://media.tenor.com/images/a6e309ffc5d0ca5fa84e83f27741487b/tenor.gif', 
+                'https://media.tenor.com/images/458d78415a256be651590bb541191b4f/tenor.gif', 
+                'https://media.tenor.com/images/9f4ad33677f8b86e59033b1e141517e8/tenor.gif', 
+                'https://media.tenor.com/images/3abed29f9a643d73d943e599a4a2d56f/tenor.gif', 
+                'https://media.tenor.com/images/6289eae15a8c78f330ef187c0ee3c039/tenor.gif']
+        rating = random.randrange(101)
+        ratings = random.randrange(101)
+
+        emb = discord.Embed(title = f"__Raccoon Rating :raccoon:__", description = '*When you need a Raccoon*', color = discord.Color.blue())
+        emb.set_footer(text='Powered by OkayThen')
+        emb.add_field(name = "Raccoon rating :raccoon:", value = f'{rating}/100')
+        emb.add_field(name = "OkayThen rating :bee:", value = f'{ratings}/100', inline=False)
+        emb.add_field(name = "Theme:", value = f'{words}', inline=True)
+        
+        emb.set_image(url = f'{random.choice(gifs)}')
+        
+        await ctx.send(embed = emb)    
+
+    @commands.command(aliases=['hbd'])
+    async def Happybirthday(self, ctx, member : discord.Member):
+        name = member.name
+        emb = discord.Embed(title = f"Happy birthday {name}", color = discord.Color.blue())
+        emb.set_thumbnail(url= member.avatar_url )
+        emb.set_footer(text='From GhostYT')
+        emb.set_image(url = 'https://media.tenor.com/images/783b23983a669b60969354290f5ce247/tenor.gif')
+        
+        
+        
+        await ctx.send(embed = emb)
+    @commands.command(aliases=['pog'])
+    async def pograte(self, ctx, *, name = 'You'):
+        
+        rating = random.randrange(101)
+        
+        emb = discord.Embed(title = f"__Pog rate__", description = f'**{name}** is {rating}/100 Pog', color = discord.Color.blue())
+        emb.set_footer(text='Prodigy Bot premium')
+        
+        
+        await ctx.send(embed = emb)
+    
+        
+
+
+def setup(bot):
+    bot.add_cog(Fun(bot))   
+    print('Fun is loaded')  
+
+ 
